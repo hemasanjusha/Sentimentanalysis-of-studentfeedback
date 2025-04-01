@@ -1,19 +1,13 @@
+import torch
 import numpy as np
-#import seaborn as sns
+import seaborn as sns
 import matplotlib.pyplot as plt
 import joblib
 import streamlit as st
 import pandas as pd
-import torch 
 from sklearn.metrics import classification_report, confusion_matrix
 from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-import re
-import nltk
-from nltk.corpus import words
-
-nltk.download('words')
-english_words = set(words.words())
 
 # Replace with your Hugging Face model repository name
 model_name = "Hemasanjusha/sentiment-analysis-model"
@@ -21,16 +15,8 @@ model_name = "Hemasanjusha/sentiment-analysis-model"
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-def is_gibberish(text):
-    words_list = re.findall(r'\b\w+\b', text.lower())
-    if not words_list:
-        return True
-    gibberish_count = sum(1 for word in words_list if word not in english_words)
-    return gibberish_count / len(words_list) > 0.7
 
 def predict_sentiment(text):
-    if is_gibberish(text):
-        return None
     model.eval()
     encoding = tokenizer(text, truncation=True, padding='max_length', max_length=256, return_tensors='pt')
     with torch.no_grad():
@@ -50,12 +36,15 @@ uploaded_files = st.file_uploader("Upload Excel or CSV files", type=["xlsx", "cs
 if uploaded_files:
     for uploaded_file in uploaded_files:
         st.write(f"### 📁 Processing file: {uploaded_file.name}")
-
-        # Read File
-        df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
+        
+        # Read the file based on extension
+        if uploaded_file.name.endswith('.csv'):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_excel(uploaded_file)
         
         if 'feedback_text' in df.columns:
-            df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if isinstance(x, str) and x.strip() else '')
+            df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if isinstance(x, str) and x.strip() else 'Neutral')
         else:
             st.error(f"No 'feedback_text' column found in {uploaded_file.name}")
             continue
@@ -63,11 +52,13 @@ if uploaded_files:
         st.write("### 📊 Sentiment Analysis Results:")
         st.dataframe(df)
 
-        # Visualization
+        # Visualization: Sentiment Distribution
         sentiment_counts = df['Predicted_Sentiment'].value_counts().reset_index()
         sentiment_counts.columns = ['Sentiment', 'Count']
 
-        if not sentiment_counts.empty:
+        if sentiment_counts.empty:
+            st.error(f"No valid data to display in the pie chart for {uploaded_file.name}.")
+        else:
             st.write("### 📊 Sentiment Distribution")
             fig, ax = plt.subplots(figsize=(8, 6))
             ax.pie(sentiment_counts['Count'], labels=sentiment_counts['Sentiment'], autopct='%1.1f%%', startangle=140)
@@ -75,8 +66,8 @@ if uploaded_files:
             plt.title(f'Sentiment Distribution for {uploaded_file.name}')
             st.pyplot(fig)
 
-        # **Download Processed File**
-        output_file = f"Sentiment_Analysis_Results_{uploaded_file.name}".replace('.csv', '.xlsx')
+        # *Download processed file*
+        output_file = f"Sentiment_Analysis_Results_{uploaded_file.name}".replace('.xlsx', '.xlsx').replace('.csv', '.xlsx')
         df.to_excel(output_file, index=False)
         with open(output_file, "rb") as file:
             st.download_button(label="📥 Download Results", data=file, file_name=output_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -86,9 +77,21 @@ user_input = st.text_area('Or enter your feedback directly:',"")
 if st.button('Analyze Sentiment'):
     if user_input.strip():
         sentiment = predict_sentiment(user_input)
-        if sentiment is None:
-            st.error('❗ Invalid Text. Please enter meaningful feedback.')
-        else:
-            st.success(f'**Predicted Sentiment:** {sentiment}')
+        st.success(f'*Predicted Sentiment:* {sentiment}')
     else:
-        st.warning('⚠️ Please enter valid feedback.') 
+        st.warning('⚠ Please enter valid feedback.')
+
+# Option to Evaluate Model
+def evaluate_model(texts, labels):
+    predictions = [predict_sentiment(text) for text in texts]
+    st.write('### Classification Report')
+    st.text(classification_report(labels, predictions, target_names=['Negative', 'Positive', 'Neutral']))
+
+    # Confusion Matrix
+    cm = confusion_matrix(labels, predictions)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Negative', 'Positive', 'Neutral'], yticklabels=['Negative', 'Positive', 'Neutral'])
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.title('Confusion Matrix')
+    st.pyplot(plt)
