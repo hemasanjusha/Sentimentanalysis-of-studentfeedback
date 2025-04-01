@@ -38,7 +38,11 @@ def predict_sentiment(text):
     encoding = tokenizer(text, truncation=True, padding='max_length', max_length=256, return_tensors='pt')
     with torch.no_grad():
         output = model(**encoding)
-        prediction = torch.argmax(output.logits, dim=1).item()
+        logits = output.logits  # Raw logits before softmax
+        prediction = torch.argmax(logits, dim=1).item()
+        
+    # Debugging: Print logits to inspect
+    st.write(f"Raw logits: {logits}")
     
     sentiment_map = {0: 'Negative', 1: 'Positive', 2: 'Neutral'}
     return sentiment_map.get(prediction, "Unknown")
