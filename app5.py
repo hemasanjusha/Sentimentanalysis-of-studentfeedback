@@ -73,7 +73,7 @@ if uploaded_files:
             st.download_button(label="📥 Download Results", data=file, file_name=output_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 # Input Section
-user_input = st.text_area('Or enter your feedback directly:',"")
+user_input = st.text_area('Or enter your feedback directly:'," ")
 if st.button('Analyze Sentiment'):
     if user_input.strip():
         sentiment = predict_sentiment(user_input)
