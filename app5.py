@@ -7,8 +7,13 @@ import streamlit as st
 import pandas as pd
 import torch.nn.functional as F
 from sklearn.metrics import classification_report, confusion_matrix
-from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import re
+import nltk
+from nltk.corpus import words
+
+nltk.download('words')
+english_words = set(words.words())
 
 # Replace with your Hugging Face model repository name
 model_name = "Hemasanjusha/sentiment-analysis-model"
@@ -16,10 +21,21 @@ model_name = "Hemasanjusha/sentiment-analysis-model"
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
+def is_gibberish(text):
+    if not text or not isinstance(text, str):
+        return True  # If the text is empty or not a string, treat it as gibberish.
+    
+    words_list = re.findall(r'\b\w+\b', text.lower())
+    if not words_list:
+        return True
+    
+    gibberish_count = sum(1 for word in words_list if word not in english_words)
+    return gibberish_count / len(words_list) > 0.7
+
 def predict_sentiment(text):
     if is_gibberish(text):
-        return None
-
+        return "Invalid Text"
+    
     model.eval()
     encoding = tokenizer(text, truncation=True, padding='max_length', max_length=256, return_tensors='pt')
 
@@ -59,7 +75,7 @@ if uploaded_files:
             df = pd.read_excel(uploaded_file)
         
         if 'feedback_text' in df.columns:
-            df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if isinstance(x, str) and x.strip() else 'Neutral')
+            df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if isinstance(x, str) and x.strip() else 'Invalid Text')
         else:
             st.error(f"No 'feedback_text' column found in {uploaded_file.name}")
             continue
@@ -82,7 +98,7 @@ if uploaded_files:
             st.pyplot(fig)
 
         # *Download processed file*
-        output_file = f"Sentiment_Analysis_Results_{uploaded_file.name}".replace('.xlsx', '.xlsx').replace('.csv', '.xlsx')
+        output_file = f"Sentiment_Analysis_Results_{uploaded_file.name}".replace('.csv', '.xlsx')
         df.to_excel(output_file, index=False)
         with open(output_file, "rb") as file:
             st.download_button(label="📥 Download Results", data=file, file_name=output_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
