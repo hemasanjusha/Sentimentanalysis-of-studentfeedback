@@ -82,8 +82,8 @@ if uploaded_files:
         with open(output_file, "rb") as file:
             st.download_button(label="📥 Download Results", data=file, file_name=output_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# Input Section (Default input as empty string "")
-user_input = ""
+user_input = st.text_area('Or enter your feedback directly:', "")
+
 if st.button('Analyze Sentiment'):
     if user_input.strip():
         sentiment = predict_sentiment(user_input)
