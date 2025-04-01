@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import joblib
 import streamlit as st
 import pandas as pd
+import torch.nn.functional as F
 from sklearn.metrics import classification_report, confusion_matrix
 from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -15,15 +16,29 @@ model_name = "Hemasanjusha/sentiment-analysis-model"
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-
 def predict_sentiment(text):
+    if is_gibberish(text):
+        return None
+
     model.eval()
     encoding = tokenizer(text, truncation=True, padding='max_length', max_length=256, return_tensors='pt')
+
     with torch.no_grad():
         output = model(**encoding)
+        probabilities = F.softmax(output.logits, dim=1).squeeze().tolist()  # Get probability scores
+
+        # Extract confidence scores for each class
+        negative_score, positive_score, neutral_score = probabilities
+        
+        # If neutral and negative are close, prioritize negative
+        if abs(negative_score - neutral_score) < 0.1:
+            return "Negative" if negative_score > neutral_score else "Neutral"
+
+        # Get final prediction
         prediction = torch.argmax(output.logits, dim=1).item()
-    sentiment_map = {0: 'Negative', 1: 'Positive', 2: 'Neutral'}
-    return sentiment_map[prediction]
+        sentiment_map = {0: 'Negative', 1: 'Positive', 2: 'Neutral'}
+        return sentiment_map[prediction]
+
 
 # Streamlit UI
 st.title('🎓 Student Feedback Sentiment Analyzer')
