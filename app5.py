@@ -1,5 +1,5 @@
 import numpy as np
-import seaborn as sns
+#import seaborn as sns
 import matplotlib.pyplot as plt
 import joblib
 import streamlit as st
@@ -55,8 +55,7 @@ if uploaded_files:
         df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
         
         if 'feedback_text' in df.columns:
-            # If no feedback text is found, set a default empty string ("")
-            df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if isinstance(x, str) and x.strip() else '')
+             df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if isinstance(x, str) and x.strip() else '')
         else:
             st.error(f"No 'feedback_text' column found in {uploaded_file.name}")
             continue
@@ -82,8 +81,8 @@ if uploaded_files:
         with open(output_file, "rb") as file:
             st.download_button(label="📥 Download Results", data=file, file_name=output_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-user_input = st.text_area('Or enter your feedback directly:', "")
-
+# Input Section
+user_input = st.text_area('Or enter your feedback directly:',"")
 if st.button('Analyze Sentiment'):
     if user_input.strip():
         sentiment = predict_sentiment(user_input)
