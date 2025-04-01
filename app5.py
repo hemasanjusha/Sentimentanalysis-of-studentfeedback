@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import streamlit as st
 import pandas as pd
-import torch 
-from sklearn.metrics import classification_report, confusion_matrix
+import torch
+import torch.nn.functional as F
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import re
 import nltk
@@ -26,10 +26,10 @@ def is_gibberish(text):
     gibberish_count = sum(1 for word in words_list if word not in english_words)
     return gibberish_count / len(words_list) > 0.7
 
-# Function to predict sentiment
+# Function to predict sentiment with softmax and confidence threshold
 def predict_sentiment(text):
     if not isinstance(text, str) or not text.strip():
-        return "Neutral"  # Default for empty inputs
+        return None  # No sentiment prediction for empty or invalid input
     
     if is_gibberish(text):
         return "Invalid Input"  # Handle gibberish inputs
@@ -39,13 +39,16 @@ def predict_sentiment(text):
     with torch.no_grad():
         output = model(**encoding)
         logits = output.logits  # Raw logits before softmax
-        prediction = torch.argmax(logits, dim=1).item()
-        
-    # Debugging: Print logits to inspect
-    st.write(f"Raw logits: {logits}")
+        probabilities = F.softmax(logits, dim=1)  # Apply softmax to get probabilities
+        confidence, prediction = torch.max(probabilities, dim=1)
     
     sentiment_map = {0: 'Negative', 1: 'Positive', 2: 'Neutral'}
-    return sentiment_map.get(prediction, "Unknown")
+    
+    # If the confidence is low (below 0.5), return "Neutral"
+    if confidence.item() < 0.5:
+        return "Neutral"
+    
+    return sentiment_map.get(prediction.item(), "Unknown")
 
 # Streamlit UI
 st.title('🎓 Student Feedback Sentiment Analyzer')
@@ -63,7 +66,7 @@ if uploaded_files:
         df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
         
         if 'feedback_text' in df.columns:
-            df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(str(x)) if isinstance(x, str) and x.strip() else 'Neutral')
+            df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(str(x)) if isinstance(x, str) and x.strip() else None)
         else:
             st.error(f"No 'feedback_text' column found in {uploaded_file.name}")
             continue
@@ -92,14 +95,13 @@ if uploaded_files:
 # Input Section
 user_input = st.text_area('Or enter your feedback directly:')
 
-# Debugging: Print user input to check if it's being received correctly
-st.write(f"📝 Raw Input: {repr(user_input)}")
-
 if st.button('Analyze Sentiment'):
     if user_input.strip():
         sentiment = predict_sentiment(str(user_input))  # Ensure input is a string
         if sentiment == "Invalid Input":
             st.error('❗ Invalid Text. Please enter meaningful feedback.')
+        elif sentiment is None:
+            st.warning('⚠️ Please enter valid feedback.')
         else:
             st.success(f'**Predicted Sentiment:** {sentiment}')
     else:
