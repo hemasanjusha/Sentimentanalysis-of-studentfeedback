@@ -55,7 +55,7 @@ if uploaded_files:
         df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
         
         if 'feedback_text' in df.columns:
-            df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if isinstance(x, str) and x.strip() else 'Neutral')
+             df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if isinstance(x, str) and x.strip() else '')
         else:
             st.error(f"No 'feedback_text' column found in {uploaded_file.name}")
             continue
@@ -82,7 +82,7 @@ if uploaded_files:
             st.download_button(label="📥 Download Results", data=file, file_name=output_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 # Input Section
-user_input = st.text_area('Or enter your feedback directly:')
+user_input = st.text_area('Or enter your feedback directly:',"")
 if st.button('Analyze Sentiment'):
     if user_input.strip():
         sentiment = predict_sentiment(user_input)
@@ -91,4 +91,4 @@ if st.button('Analyze Sentiment'):
         else:
             st.success(f'**Predicted Sentiment:** {sentiment}')
     else:
-        st.warning('⚠️ Please enter valid feedback.') the problem is i cant use the sentence without "" why
+        st.warning('⚠️ Please enter valid feedback.')
