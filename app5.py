@@ -1,12 +1,10 @@
 import numpy as np
-#import seaborn as sns
-import matplotlib.pyplot as plt
+import plotly.express as px
 import joblib
 import streamlit as st
 import pandas as pd
 import torch 
 from sklearn.metrics import classification_report, confusion_matrix
-from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import re
 import nltk
@@ -15,9 +13,8 @@ from nltk.corpus import words
 nltk.download('words')
 english_words = set(words.words())
 
-# Replace with your Hugging Face model repository name
+# Load the model from Hugging Face
 model_name = "Hemasanjusha/sentiment-analysis-model"
-# Load the model and tokenizer directly from Hugging Face
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
@@ -50,30 +47,34 @@ uploaded_files = st.file_uploader("Upload Excel or CSV files", type=["xlsx", "cs
 if uploaded_files:
     for uploaded_file in uploaded_files:
         st.write(f"### 📁 Processing file: {uploaded_file.name}")
-
+        
         # Read File
         df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
         
         if 'feedback_text' in df.columns:
-             df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if isinstance(x, str) and x.strip() else '')
+            df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if isinstance(x, str) and x.strip() else '')
         else:
             st.error(f"No 'feedback_text' column found in {uploaded_file.name}")
             continue
-
+        
         st.write("### 📊 Sentiment Analysis Results:")
-        st.dataframe(df)
+        
+        # Apply color coding for better readability
+        def color_sentiment(val):
+            color = 'green' if val == 'Positive' else 'red' if val == 'Negative' else 'blue'
+            return f'color: {color}'
+        
+        styled_df = df.style.applymap(color_sentiment, subset=['Predicted_Sentiment'])
+        st.dataframe(styled_df)
 
-        # Visualization
+        # Visualization using Plotly
         sentiment_counts = df['Predicted_Sentiment'].value_counts().reset_index()
         sentiment_counts.columns = ['Sentiment', 'Count']
 
         if not sentiment_counts.empty:
             st.write("### 📊 Sentiment Distribution")
-            fig, ax = plt.subplots(figsize=(8, 6))
-            ax.pie(sentiment_counts['Count'], labels=sentiment_counts['Sentiment'], autopct='%1.1f%%', startangle=140)
-            ax.axis('equal')
-            plt.title(f'Sentiment Distribution for {uploaded_file.name}')
-            st.pyplot(fig)
+            fig = px.pie(sentiment_counts, values='Count', names='Sentiment', title=f'Sentiment Distribution for {uploaded_file.name}', color='Sentiment', color_discrete_map={'Positive':'green', 'Negative':'red', 'Neutral':'blue'})
+            st.plotly_chart(fig)
 
         # **Download Processed File**
         output_file = f"Sentiment_Analysis_Results_{uploaded_file.name}".replace('.csv', '.xlsx')
