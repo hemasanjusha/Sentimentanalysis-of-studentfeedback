@@ -33,8 +33,11 @@ def is_gibberish(text):
 
 # Function to predict sentiment
 def predict_sentiment(text):
+    if not text.strip():  # Check for empty input
+        return "No Prediction"
     if is_gibberish(text):
         return "Invalid Text"
+    
     model.eval()
     encoding = tokenizer(text, truncation=True, padding='max_length', max_length=256, return_tensors='pt')
     with torch.no_grad():
@@ -47,11 +50,15 @@ def process_uploaded_file(uploaded_file):
     file_type = uploaded_file.name.split('.')[-1]
     try:
         df = pd.read_csv(uploaded_file) if file_type == 'csv' else pd.read_excel(uploaded_file)
+
         if 'feedback_text' not in df.columns:
             st.error(f"❌ No 'feedback_text' column found in {uploaded_file.name}")
             return None
-        df['feedback_text'] = df['feedback_text'].astype(str).fillna('').str.strip()
-        df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if x else 'No Feedback')
+
+        # Ensure NaN values or empty strings are marked as 'No Prediction'
+        df['feedback_text'] = df['feedback_text'].astype(str).replace({'nan': '', 'NaN': '', None: ''}).fillna('').str.strip()
+        df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if x else 'No Prediction')
+
         return df
     except Exception as e:
         st.error(f"⚠️ Error processing file {uploaded_file.name}: {e}")
@@ -84,7 +91,7 @@ if uploaded_files:
                 fig = px.pie(sentiment_counts, names='Sentiment', values='Count', 
                              title=f'Sentiment Distribution for {uploaded_file.name}',
                              color='Sentiment', 
-                             color_discrete_map={"Positive": "green", "Negative": "red", "Neutral": "blue"},
+                             color_discrete_map={"Positive": "green", "Negative": "red", "Neutral": "blue", "No Prediction": "gray"},
                              hover_data=['Count'], hole=0.4)
                 st.plotly_chart(fig, use_container_width=True)
 
