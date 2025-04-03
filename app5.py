@@ -3,45 +3,43 @@ import matplotlib.pyplot as plt
 import streamlit as st
 import pandas as pd
 import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import re
 import nltk
 from nltk.corpus import words
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-# Download word corpus for gibberish detection
+# Download English words dataset
 nltk.download('words')
 english_words = set(words.words())
 
-# Load the pre-trained model from Hugging Face
+# Load the Hugging Face model and tokenizer
 model_name = "Hemasanjusha/sentiment-analysis-model"
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
+# Function to check gibberish text
 def is_gibberish(text):
-    """Check if a given text is gibberish."""
     words_list = re.findall(r'\b\w+\b', text.lower())
     if not words_list:
         return True
     gibberish_count = sum(1 for word in words_list if word not in english_words)
     return gibberish_count / len(words_list) > 0.7
 
+# Function to predict sentiment
 def predict_sentiment(text):
-    """Predict sentiment using the pre-trained model."""
     if is_gibberish(text):
         return "Invalid Text"
-
     model.eval()
     encoding = tokenizer(text, truncation=True, padding='max_length', max_length=256, return_tensors='pt')
     with torch.no_grad():
         output = model(**encoding)
         prediction = torch.argmax(output.logits, dim=1).item()
-
     sentiment_map = {0: 'Negative', 1: 'Positive', 2: 'Neutral'}
     return sentiment_map.get(prediction, "Unknown")
 
 # Streamlit UI
 st.title('🎓 Student Feedback Sentiment Analyzer')
-st.write('Analyze student feedback using a BERT-based sentiment analysis model.')
+st.write('Analyze student feedback using a BERT sentiment analysis model.')
 
 # File Upload Section
 st.header("📂 Upload Files for Sentiment Analysis")
@@ -54,16 +52,15 @@ if uploaded_files:
         # Read File
         df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
 
+        # Handling missing feedback_text values
         if 'feedback_text' in df.columns:
-            # Ensure feedback_text is a string and handle missing values
             df['feedback_text'] = df['feedback_text'].astype(str).fillna('').str.strip()
-
-            # Apply sentiment analysis
             df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if x else 'No Feedback')
         else:
             st.error(f"❌ No 'feedback_text' column found in {uploaded_file.name}")
             continue
 
+        # Display results
         st.write("### 📊 Sentiment Analysis Results:")
         st.dataframe(df)
 
@@ -79,15 +76,15 @@ if uploaded_files:
             plt.title(f'Sentiment Distribution for {uploaded_file.name}')
             st.pyplot(fig)
 
-        # Download Processed File
+        # **Download Processed File**
         output_file = f"Sentiment_Analysis_Results_{uploaded_file.name}".replace('.csv', '.xlsx')
         df.to_excel(output_file, index=False)
         with open(output_file, "rb") as file:
             st.download_button(label="📥 Download Results", data=file, file_name=output_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# Input Section for Manual Feedback
-st.header("📝 Enter Feedback Manually")
-user_input = st.text_area('Or enter your feedback directly:',"")
+# Input Section for Direct Text Analysis
+st.header("📝 Analyze a Single Feedback")
+user_input = st.text_area('Enter your feedback here:', "")
 
 if st.button('Analyze Sentiment'):
     if user_input.strip():
@@ -98,4 +95,3 @@ if st.button('Analyze Sentiment'):
             st.success(f'**Predicted Sentiment:** {sentiment}')
     else:
         st.warning('⚠️ Please enter valid feedback.')
-
