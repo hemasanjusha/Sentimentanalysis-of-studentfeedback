@@ -1,29 +1,35 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import streamlit as st
 import pandas as pd
 import torch
+import streamlit as st
 import re
 import nltk
 from nltk.corpus import words
+import plotly.express as px
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-# Download English words dataset
-nltk.download('words')
-english_words = set(words.words())
+# Download English words dataset (only once)
+@st.cache_resource
+def load_english_words():
+    nltk.download('words')
+    return set(words.words())
 
-# Load the Hugging Face model and tokenizer
-model_name = "Hemasanjusha/sentiment-analysis-model"
-model = AutoModelForSequenceClassification.from_pretrained(model_name)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+english_words = load_english_words()
+
+# Load the Hugging Face model and tokenizer (cached to avoid reloading)
+@st.cache_resource
+def load_model():
+    model_name = "Hemasanjusha/sentiment-analysis-model"
+    model = AutoModelForSequenceClassification.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    return model, tokenizer
+
+model, tokenizer = load_model()
 
 # Function to check gibberish text
 def is_gibberish(text):
     words_list = re.findall(r'\b\w+\b', text.lower())
-    if not words_list:
-        return True
-    gibberish_count = sum(1 for word in words_list if word not in english_words)
-    return gibberish_count / len(words_list) > 0.7
+    return not words_list or sum(1 for word in words_list if word not in english_words) / len(words_list) > 0.7
 
 # Function to predict sentiment
 def predict_sentiment(text):
@@ -34,10 +40,25 @@ def predict_sentiment(text):
     with torch.no_grad():
         output = model(**encoding)
         prediction = torch.argmax(output.logits, dim=1).item()
-    sentiment_map = {0: 'Negative', 1: 'Positive', 2: 'Neutral'}
-    return sentiment_map.get(prediction, "Unknown")
+    return {0: 'Negative', 1: 'Positive', 2: 'Neutral'}.get(prediction, "Unknown")
 
-# Streamlit UI
+# Function to process uploaded file
+def process_uploaded_file(uploaded_file):
+    file_type = uploaded_file.name.split('.')[-1]
+    try:
+        df = pd.read_csv(uploaded_file) if file_type == 'csv' else pd.read_excel(uploaded_file)
+        if 'feedback_text' not in df.columns:
+            st.error(f"❌ No 'feedback_text' column found in {uploaded_file.name}")
+            return None
+        df['feedback_text'] = df['feedback_text'].astype(str).fillna('').str.strip()
+        df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if x else 'No Feedback')
+        return df
+    except Exception as e:
+        st.error(f"⚠️ Error processing file {uploaded_file.name}: {e}")
+        return None
+
+# Streamlit UI Setup
+st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="wide")
 st.title('🎓 Student Feedback Sentiment Analyzer')
 st.write('Analyze student feedback using a BERT sentiment analysis model.')
 
@@ -47,51 +68,39 @@ uploaded_files = st.file_uploader("Upload Excel or CSV files", type=["xlsx", "cs
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
-        st.write(f"### 📁 Processing file: {uploaded_file.name}")
+        st.write(f"### 📁 Processing: {uploaded_file.name}")
+        df = process_uploaded_file(uploaded_file)
 
-        # Read File
-        df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
+        if df is not None:
+            st.write("### 📊 Sentiment Analysis Results:")
+            st.dataframe(df)
 
-        # Handling missing feedback_text values
-        if 'feedback_text' in df.columns:
-            df['feedback_text'] = df['feedback_text'].astype(str).fillna('').str.strip()
-            df['Predicted_Sentiment'] = df['feedback_text'].apply(lambda x: predict_sentiment(x) if x else 'No Feedback')
-        else:
-            st.error(f"❌ No 'feedback_text' column found in {uploaded_file.name}")
-            continue
+            # Visualization using Plotly
+            sentiment_counts = df['Predicted_Sentiment'].value_counts().reset_index()
+            sentiment_counts.columns = ['Sentiment', 'Count']
 
-        # Display results
-        st.write("### 📊 Sentiment Analysis Results:")
-        st.dataframe(df)
+            if not sentiment_counts.empty:
+                st.write("### 📊 Sentiment Distribution")
+                fig = px.pie(sentiment_counts, names='Sentiment', values='Count', 
+                             title=f'Sentiment Distribution for {uploaded_file.name}',
+                             color='Sentiment', 
+                             color_discrete_map={"Positive": "green", "Negative": "red", "Neutral": "blue"},
+                             hover_data=['Count'], hole=0.4)
+                st.plotly_chart(fig, use_container_width=True)
 
-        # Visualization
-        sentiment_counts = df['Predicted_Sentiment'].value_counts().reset_index()
-        sentiment_counts.columns = ['Sentiment', 'Count']
-
-        if not sentiment_counts.empty:
-            st.write("### 📊 Sentiment Distribution")
-            fig, ax = plt.subplots(figsize=(8, 6))
-            ax.pie(sentiment_counts['Count'], labels=sentiment_counts['Sentiment'], autopct='%1.1f%%', startangle=140)
-            ax.axis('equal')
-            plt.title(f'Sentiment Distribution for {uploaded_file.name}')
-            st.pyplot(fig)
-
-        # **Download Processed File**
-        output_file = f"Sentiment_Analysis_Results_{uploaded_file.name}".replace('.csv', '.xlsx')
-        df.to_excel(output_file, index=False)
-        with open(output_file, "rb") as file:
-            st.download_button(label="📥 Download Results", data=file, file_name=output_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            # Download Processed File
+            output_file = f"Sentiment_Analysis_Results_{uploaded_file.name}".replace('.csv', '.xlsx')
+            df.to_excel(output_file, index=False)
+            with open(output_file, "rb") as file:
+                st.download_button(label="📥 Download Results", data=file, file_name=output_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 # Input Section for Direct Text Analysis
 st.header("📝 Analyze a Single Feedback")
 user_input = st.text_area('Enter your feedback here:', "")
 
-if st.button('Analyze Sentiment'):
-    if user_input.strip():
-        sentiment = predict_sentiment(user_input)
-        if sentiment == "Invalid Text":
-            st.error('❗ Invalid Text. Please enter meaningful feedback.')
-        else:
-            st.success(f'**Predicted Sentiment:** {sentiment}')
+if st.button('Analyze Sentiment') and user_input.strip():
+    sentiment = predict_sentiment(user_input)
+    if sentiment == "Invalid Text":
+        st.error('❗ Invalid Text. Please enter meaningful feedback.')
     else:
-        st.warning('⚠️ Please enter valid feedback.')
+        st.success(f'**Predicted Sentiment:** {sentiment}')
