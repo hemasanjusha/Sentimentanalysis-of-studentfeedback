@@ -35,13 +35,17 @@ def predict_sentiment(text):
 def generate_teacher_suggestion(feedback):
     feedback = feedback.lower()
 
+    # Ensure suggestion is only made for valid feedback
+    if re.search(r'[^a-zA-Z0-9\s]', feedback):
+        return "Invalid Text, No suggestions available"
+    
     if any(word in feedback for word in ["real time", "real-time", "real-world", "industry example", "practical example"]):
         return "Include more real-world or industry-based examples during teaching."
     
     elif any(word in feedback for word in ["interactive", "participate", "engage", "discussion", "two-way"]):
         return "Make the sessions more interactive with questions, discussions, and student participation."
     
-    elif any(word in feedback for word in ["slow", "drag", "delayed", "takes too long","bad","worst","not good"]):
+    elif any(word in feedback for word in ["slow", "drag", "delayed", "takes too long", "bad", "worst", "not good"]):
         return "Consider improving the pace of teaching to keep students attentive."
     
     elif any(word in feedback for word in ["fast", "too quick", "rushed", "quickly covered"]):
@@ -64,10 +68,10 @@ def generate_teacher_suggestion(feedback):
     
     elif any(word in feedback for word in ["attentive", "listens", "cares", "supportive"]):
         return "You're doing a great job being attentive to student needs—keep it up!"
-
+    
     elif any(word in feedback for word in ["fun", "interesting", "exciting"]):
         return "Continue using fun and interesting methods to keep students engaged."
-
+    
     else:
         return "Continue to maintain quality and adapt based on feedback."
 
@@ -113,7 +117,7 @@ if page == "📤 Upload & Process Feedback":
                df = df.drop_duplicates(subset="ROLL NUMBER", keep="first")
 
     # Fill NaNs with empty strings to handle in prediction
-               df["FEEDBACK_TEXT"] = df["FEEDBACK_TEXT"].fillna("")
+               df["FEEDBACK_TEXT"] = df["FEEDBACK_TEXT"].fillna("")  
 
     # Predict sentiment (including for empty strings)
                df["Predicted_Sentiment"] = df["FEEDBACK_TEXT"].apply(predict_sentiment)
