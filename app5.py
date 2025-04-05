@@ -166,15 +166,19 @@ elif page == "📊 Visualizations":
 elif page == "✍ Manual Feedback Entry":
     st.header("✍ Enter Feedback Manually")
     feedback_input = st.text_area("Enter your feedback:")
+    
     if st.button("Analyze Feedback"):
         if feedback_input.strip():
             sentiment = predict_sentiment(feedback_input)
-            suggestion = give_basic_suggestion(sentiment)
-            improvement = generate_teacher_suggestion(feedback_input)
+            
+            if sentiment == "Invalid Text":
+                st.error('❗ Invalid Text. Please enter meaningful feedback.')
+            else:
+                suggestion = give_basic_suggestion(sentiment)
+                improvement = generate_teacher_suggestion(feedback_input)
+                st.success(f'*Predicted Sentiment:* {sentiment}')
+                st.write(f'Suggestion: {suggestion}')
+                st.write(f'Improvement Tip: {improvement}')
 
-            st.success("✅ Analysis Completed")
-            st.markdown(f"*Sentiment:* {sentiment}")
-            st.markdown(f"*Suggestion:* {suggestion}")
-            st.markdown(f"*Improvement Tip:* {improvement}")
         else:
             st.warning("⚠ Please enter some feedback to analyze.")
