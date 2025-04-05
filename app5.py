@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from transformers import pipeline
 import plotly.express as px
-
+import re
 # Page configuration
 st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
 
@@ -17,6 +17,9 @@ model = load_model()
 def predict_sentiment(text):
     if not isinstance(text, str) or text.strip() == "":
         return "No Feedback"
+        gibberish_pattern = r'[^a-zA-Z0-9\s]'
+    if re.match(gibberish_pattern, text.strip()):
+        return "Invalid Text, Please enter valid text"
     result = model(text)[0]['label']
     if "1 star" in result or "2 stars" in result:
         return "Negative"
