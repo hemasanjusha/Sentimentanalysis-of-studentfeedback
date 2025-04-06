@@ -1,30 +1,27 @@
 import streamlit as st
 import pandas as pd
 from transformers import pipeline
-import plotly.express as px
+from huggingface_hub import login
 import re
 import string
 import nltk
 from nltk.corpus import words as nltk_words
 from io import BytesIO
+import plotly.express as px
+import os
 
-# Download English words
+# Download NLTK words
 nltk.download('words')
 english_words = set(nltk_words.words())
-from transformers import pipeline
-from huggingface_hub import login
-import os
-# Streamlit page config
-st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
-from huggingface_hub import login
+
+# Authenticate Hugging Face model
 login(st.secrets["HUGGINGFACE_TOKEN"])
 model = pipeline("sentiment-analysis", model="Hemasanjusha/student-feedback-sentiment-model")
 
-# Streamlit page config
+# Streamlit page configuration
 st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
 
-
-# Gibberish checker
+# Gibberish detection
 def is_gibberish(text):
     if not isinstance(text, str) or len(text.strip()) < 5:
         return True
@@ -49,7 +46,7 @@ def predict_sentiment(text):
     else:
         return "Neutral"
 
-# Suggestions based on feedback
+# Suggestion generator
 def generate_teacher_suggestion(feedback, sentiment):
     if is_gibberish(feedback):
         return "⚠ Feedback is invalid or does not contain meaningful content."
@@ -107,11 +104,11 @@ def generate_teacher_suggestion(feedback, sentiment):
             return suggestion
     return "Consider reviewing this feedback to find areas for improvement."
 
-# Session state init
+# Session state
 if "df" not in st.session_state:
     st.session_state.df = pd.DataFrame()
 
-# Sidebar
+# Sidebar Navigation
 st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=100)
 st.sidebar.title("📌 Navigation")
 page = st.sidebar.radio("Go to", [
@@ -123,7 +120,16 @@ page = st.sidebar.radio("Go to", [
     "Download Results"
 ])
 
-# Upload and Process Page
+# Filtering logic
+def get_filtered_df(selected_teacher, selected_subject):
+    df = st.session_state.df
+    if selected_teacher != "All":
+        df = df[df["TEACHER"] == selected_teacher]
+    if selected_subject != "All":
+        df = df[df["SUBJECT"] == selected_subject]
+    return df
+
+# Page: Upload Feedback
 if page == "Upload & Process Feedback":
     st.header("📤 Upload Feedback File")
     uploaded_file = st.file_uploader("Upload CSV or Excel", type=["csv", "xlsx"])
@@ -142,17 +148,8 @@ if page == "Upload & Process Feedback":
             st.success("✅ Feedback processed successfully!")
             st.dataframe(df, use_container_width=True)
 
-# Filtering
-def get_filtered_df(selected_teacher, selected_subject):
-    df = st.session_state.df
-    if selected_teacher != "All":
-        df = df[df["TEACHER"] == selected_teacher]
-    if selected_subject != "All":
-        df = df[df["SUBJECT"] == selected_subject]
-    return df
-
-# Teacher Dashboard
-if page == "Teacher Dashboard":
+# Page: Teacher Dashboard
+elif page == "Teacher Dashboard":
     st.header("👨‍🏫 Teacher-wise Sentiment Dashboard")
     if st.session_state.df.empty:
         st.info("Please upload and process feedback first.")
@@ -167,7 +164,7 @@ if page == "Teacher Dashboard":
         fig = px.pie(df_filtered, names="Predicted_Sentiment", title="Sentiment Distribution")
         st.plotly_chart(fig, use_container_width=True)
 
-# Visualizations
+# Page: Visualizations
 elif page == "Visualizations":
     st.header("📊 Overall Sentiment Visualizations")
     df = st.session_state.df
@@ -179,7 +176,7 @@ elif page == "Visualizations":
         st.plotly_chart(px.pie(sentiment_counts, names='Sentiment', values='Count', title='Sentiment Distribution'), use_container_width=True)
         st.plotly_chart(px.bar(sentiment_counts, x='Sentiment', y='Count', color='Sentiment', text='Count', title='Sentiment Count'), use_container_width=True)
 
-# Improvement Tips
+# Page: Improvement Tips
 elif page == "Improvement Tips":
     st.header("🛠️ Suggestions to Improve")
     df = st.session_state.df
@@ -210,7 +207,7 @@ elif page == "Improvement Tips":
         if not suggestion_counts.empty:
             st.plotly_chart(px.pie(suggestion_counts, names='Suggestion', values='Count', title='Improvement Suggestion Distribution'), use_container_width=True)
 
-# Manual Entry
+# Page: Manual Entry
 elif page == "Manual Feedback Entry":
     st.header("✍ Analyze Feedback Manually")
     feedback_input = st.text_area("Enter your feedback:")
@@ -229,8 +226,7 @@ elif page == "Manual Feedback Entry":
         else:
             st.warning("⚠️ Please enter some feedback.")
 
-
-# Download Results
+# Page: Download Results
 elif page == "Download Results":
     st.header("📥 Download Results")
     df = st.session_state.df
