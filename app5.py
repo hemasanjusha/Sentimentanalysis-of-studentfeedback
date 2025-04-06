@@ -14,7 +14,8 @@ english_words = set(nltk_words.words())
 
 # Streamlit page config
 st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
-model = pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment")
+model = pipeline("sentiment-analysis", model="Hemasanjusha/sentiment-analysis-model")
+
 
 
 
