@@ -18,9 +18,26 @@ english_words = set(nltk_words.words())
 st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="wide")
 st.title("🎓 Student Feedback Sentiment Analyzer")
 
-# Load model safely
+# Page setup
+st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="centered")
+st.title("🎓 Student Feedback Sentiment Analyzer")
+
+import streamlit as st
+import torch
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
+import nltk
+from nltk.corpus import words
+
+# Download nltk words corpus (used for gibberish detection)
+nltk.download('words')
+
+# Set up Streamlit page
+st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="centered")
+st.title("🎓 Student Feedback Sentiment Analyzer")
+
+# Load model and tokenizer
 @st.cache_resource
-def load_sentiment_model():
+def load_model():
     try:
         model_name = "Hemasanjusha/student-feedback-sentiment-model"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -30,8 +47,32 @@ def load_sentiment_model():
         st.error(f"❌ Failed to load sentiment model: {e}")
         return None
 
-# Load model
-sentiment_pipeline = load_sentiment_model()
+sentiment_pipeline = load_model()
+
+# Function to check for gibberish input
+def is_gibberish(text):
+    english_vocab = set(words.words())
+    tokens = text.lower().split()
+    matches = [w for w in tokens if w in english_vocab]
+    return len(matches) / max(len(tokens), 1) < 0.3
+
+# Text input from user
+user_input = st.text_area("✍️ Enter student feedback here:")
+
+# Predict button
+if st.button("🔍 Analyze Sentiment"):
+    if sentiment_pipeline is None:
+        st.warning("⚠️ Sentiment model not loaded.")
+    elif not user_input.strip():
+        st.warning("⚠️ Please enter valid feedback.")
+    elif is_gibberish(user_input):
+        st.warning("⚠️ This feedback seems to be gibberish or meaningless.")
+    else:
+        result = sentiment_pipeline(user_input)[0]
+        sentiment = result['label']
+        confidence = result['score']
+        st.success(f"✅ Sentiment: **{sentiment}** with **{confidence:.2%}** confidence.")
+
 # Gibberish detection
 def is_gibberish(text):
     if not isinstance(text, str) or len(text.strip()) < 5:
