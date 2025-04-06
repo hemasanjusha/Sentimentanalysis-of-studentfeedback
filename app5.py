@@ -18,35 +18,12 @@ english_words = set(nltk_words.words())
 # Set page config
 st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="centered")
 st.title("🎓 Student Feedback Sentiment Analyzer")
-from huggingface_hub import login
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import pipeline
 
-import streamlit as st
-from huggingface_hub import login
+model_path = "path/to/your/sentiment-analysis-model"
+pipe = pipeline("sentiment-analysis", model_path = "D:/sentiment-analysis-model")
 
-# ✅ Access token securely
-hf_token = st.secrets["api_keys"]["HUGGINGFACE_TOKEN"]
-
-# ✅ Login to Hugging Face
-login(token=hf_token)
-
-
-# Step 2: Load your model and tokenizer
-MODEL_NAME = "Hemasanjusha1/student-feedback-sentiment-model"
-
-@st.cache_resource
-def load_model():
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-        model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
-        return tokenizer, model
-    except Exception as e:
-        st.error(f"❌ Failed to load model: {e}")
-        return None, None
-
-tokenizer, model = load_model()
-
-
+print(pipe("I love this product!"))
 
 # Function to detect gibberish
 def is_gibberish(text):
