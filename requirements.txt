@@ -8,3 +8,4 @@ torch==2.2.2
 transformers==4.37.2
 nltk
 streamlit
+sentencepiece
