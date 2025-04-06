@@ -15,10 +15,11 @@ english_words = set(nltk_words.words())
 # Streamlit page config
 st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
 
-# Load sentiment model
+# Load custom fine-tuned sentiment model
 @st.cache_resource
 def load_model():
-    return pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment")
+    return pipeline("sentiment-analysis", model="Hemasanjusha/sentiment-analysis-model")
+
 
 model = load_model()
 
