@@ -24,8 +24,8 @@ st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="cen
 st.title("🎓 Student Feedback Sentiment Analyzer")
 from transformers import pipeline
 
-model_path = "path/to/your/sentiment-analysis-model"
-pipe = pipeline("sentiment-analysis", model_path = "D:/sentiment-analysis-model")
+model_path = "D:/sentiment-analysis-model"
+pipe = pipeline("sentiment-analysis", model_path)
 
 print(pipe("I love this product!"))
 
