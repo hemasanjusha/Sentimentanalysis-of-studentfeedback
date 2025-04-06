@@ -10,6 +10,10 @@ import re
 import string
 import plotly.express as px
 import os
+from transformers import init_empty_weights
+with init_empty_weights():
+    model = AutoModel.from_config(config)
+
 
 # Download NLTK English words
 nltk.download('words')
