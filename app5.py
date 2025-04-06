@@ -8,21 +8,21 @@ import nltk
 from nltk.corpus import words as nltk_words
 from io import BytesIO
 
-# Download English words
-nltk.download('words')
+# Download once
+nltk.download('words', quiet=True)
 english_words = set(nltk_words.words())
 
-# Streamlit page config
+# Streamlit config
 st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
 
-# Load sentiment model
+# Load model
 @st.cache_resource
 def load_model():
     return pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment")
 
 model = load_model()
 
-# Gibberish checker
+# Gibberish check
 def is_gibberish(text):
     if not isinstance(text, str) or len(text.strip()) < 5:
         return True
@@ -47,7 +47,7 @@ def predict_sentiment(text):
     else:
         return "Neutral"
 
-# Suggestions based on feedback
+# Suggestions
 def generate_teacher_suggestion(feedback, sentiment):
     if is_gibberish(feedback):
         return "⚠ Feedback is invalid or does not contain meaningful content."
@@ -105,7 +105,7 @@ def generate_teacher_suggestion(feedback, sentiment):
             return suggestion
     return "Consider reviewing this feedback to find areas for improvement."
 
-# Session state init
+# Session state
 if "df" not in st.session_state:
     st.session_state.df = pd.DataFrame()
 
@@ -121,13 +121,17 @@ page = st.sidebar.radio("Go to", [
     "Download Results"
 ])
 
-# Upload and Process Page
+# Upload & Process
 if page == "Upload & Process Feedback":
     st.header("📤 Upload Feedback File")
     uploaded_file = st.file_uploader("Upload CSV or Excel", type=["csv", "xlsx"])
     if uploaded_file:
-        df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith("csv") else pd.read_excel(uploaded_file)
-        df.columns = df.columns.str.upper()
+        if uploaded_file.name.endswith("csv"):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_excel(uploaded_file)
+        df.columns = df.columns.astype(str).str.upper()
+
         required = {"ROLL NUMBER", "FEEDBACK_TEXT", "TEACHER", "SUBJECT"}
         if not required.issubset(df.columns):
             st.error("File must contain: ROLL NUMBER, FEEDBACK_TEXT, TEACHER, SUBJECT.")
@@ -140,7 +144,7 @@ if page == "Upload & Process Feedback":
             st.success("✅ Feedback processed successfully!")
             st.dataframe(df, use_container_width=True)
 
-# Filtering
+# Filter helper
 def get_filtered_df(selected_teacher, selected_subject):
     df = st.session_state.df
     if selected_teacher != "All":
@@ -226,7 +230,6 @@ elif page == "Manual Feedback Entry":
                 st.markdown(f"*Suggestion:* `{suggestion}`")
         else:
             st.warning("⚠️ Please enter some feedback.")
-
 
 # Download Results
 elif page == "Download Results":
