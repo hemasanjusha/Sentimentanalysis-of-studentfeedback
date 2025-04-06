@@ -32,7 +32,7 @@ login(token=hf_token)
 
 
 # Step 2: Load your model and tokenizer
-MODEL_NAME = "Hemasanjusha/student-feedback-sentiment-model"
+MODEL_NAME = "Hemasanjusha1/student-feedback-sentiment-model"
 
 @st.cache_resource
 def load_model():
