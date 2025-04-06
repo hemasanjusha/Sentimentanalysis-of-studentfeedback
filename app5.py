@@ -11,10 +11,18 @@ from io import BytesIO
 # Download English words
 nltk.download('words')
 english_words = set(nltk_words.words())
+from transformers import pipeline
+from huggingface_hub import login
+import os
+# Streamlit page config
+st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
+from huggingface_hub import login
+login(st.secrets["HUGGINGFACE_TOKEN"])
+model = pipeline("sentiment-analysis", model="Hemasanjusha/student-feedback-sentiment-model")
 
 # Streamlit page config
 st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
-model = pipeline("sentiment-analysis", model=r"C:\Users\Happy\Downloads\nlptown_model",local_files_only=True)
+
 
 # Gibberish checker
 def is_gibberish(text):
