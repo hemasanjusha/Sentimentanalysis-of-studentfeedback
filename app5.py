@@ -16,9 +16,15 @@ english_words = set(nltk_words.words())
 # Streamlit page config
 st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
 
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import TextClassificationPipeline
+
 @st.cache_resource
 def load_model():
-    return pipeline("sentiment-analysis", model="Hemasanjusha/sentiment-analysis-model", device=-1)
+    model = AutoModelForSequenceClassification.from_pretrained("Hemasanjusha/sentiment-analysis-model")
+    tokenizer = AutoTokenizer.from_pretrained("Hemasanjusha/sentiment-analysis-model")
+    return TextClassificationPipeline(model=model, tokenizer=tokenizer)
+
 
 
 model = load_model()
