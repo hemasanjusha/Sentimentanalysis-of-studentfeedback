@@ -4,8 +4,7 @@ seaborn
 plotly
 matplotlib
 scikit-learn
-transformers==4.36.2
 torch==2.2.2
+transformers==4.37.2
 nltk
-streamlit==1.32.2
-openpyxl
+streamlit
