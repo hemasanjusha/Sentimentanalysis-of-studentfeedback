@@ -1,11 +1,7 @@
-numpy>=1.26.4
-pandas
-seaborn
-plotly
-matplotlib
-scikit-learn
-torch==2.2.2
-transformers==4.37.2
-nltk
 streamlit
+pandas
+transformers
+plotly
+nltk
+openpyxl
 sentencepiece
