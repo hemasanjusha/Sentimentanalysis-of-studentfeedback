@@ -21,9 +21,15 @@ st.title("🎓 Student Feedback Sentiment Analyzer")
 from huggingface_hub import login
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-# Step 1: Login securely
+import streamlit as st
+from huggingface_hub import login
+
+# ✅ Access token securely
 hf_token = st.secrets["api_keys"]["HUGGINGFACE_TOKEN"]
+
+# ✅ Login to Hugging Face
 login(token=hf_token)
+
 
 # Step 2: Load your model and tokenizer
 MODEL_NAME = "Hemasanjusha/student-feedback-sentiment-model"
