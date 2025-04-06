@@ -14,13 +14,24 @@ import os
 nltk.download('words')
 english_words = set(nltk_words.words())
 
-# Authenticate Hugging Face model
-login(st.secrets["HUGGINGFACE_TOKEN"])
-model = pipeline("sentiment-analysis", model="Hemasanjusha/student-feedback-sentiment-model")
+# Title
+st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="wide")
+st.title("🎓 Student Feedback Sentiment Analyzer")
 
-# Streamlit page configuration
-st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
+# Load model safely
+@st.cache_resource
+def load_sentiment_model():
+    try:
+        model_name = "Hemasanjusha/student-feedback-sentiment-model"
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        return pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
+    except Exception as e:
+        st.error(f"❌ Failed to load sentiment model: {e}")
+        return None
 
+# Load model
+sentiment_pipeline = load_sentiment_model()
 # Gibberish detection
 def is_gibberish(text):
     if not isinstance(text, str) or len(text.strip()) < 5:
