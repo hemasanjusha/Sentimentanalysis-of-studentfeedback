@@ -14,7 +14,7 @@ english_words = set(nltk_words.words())
 
 # Streamlit page config
 st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
-model = pipeline("sentiment-analysis", model="Hemasanjusha/student-feedback-sentiment-model")
+model = pipeline("sentiment-analysis", model="C:\Users\Happy\Downloads\nlptown_model",local_files_only=True)
 
 # Gibberish checker
 def is_gibberish(text):
