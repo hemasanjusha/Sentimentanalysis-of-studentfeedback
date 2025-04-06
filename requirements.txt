@@ -7,5 +7,5 @@ scikit-learn
 transformers==4.36.2
 torch==2.1.0
 nltk
-streamlit
+streamlit==1.32.2
 openpyxl
