@@ -20,7 +20,8 @@ st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="cen
 st.title("🎓 Student Feedback Sentiment Analyzer")
 
 # Load your fine-tuned sentiment analysis model
-model_path = "D:/sentiment-analysis-model"
+model_path = "D:/student-feedback-sentiment-model"
+
 sentiment_pipeline = pipeline("sentiment-analysis", model=model_path)
 
 # Function to detect gibberish
