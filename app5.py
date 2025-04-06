@@ -18,8 +18,8 @@ st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout
 # Load model
 @st.cache_resource
 def load_model():
-    return pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment")
-
+    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+    
 model = load_model()
 
 # Gibberish check
