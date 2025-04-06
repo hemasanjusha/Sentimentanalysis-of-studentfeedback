@@ -1,14 +1,14 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 
-model_path = r"D:\student-feedback-sentiment-model"  # Use raw string for Windows paths
+# Use raw string for Windows path and point to correct folder
+model_path = r"D:\student-feedback-sentiment-model"
 
-# Load tokenizer and model explicitly
-tokenizer = AutoTokenizer.from_pretrained(model_path)
-model = AutoModelForSequenceClassification.from_pretrained(model_path)
+# Load tokenizer and model from local path
+tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=model_path, local_files_only=True)
+model = AutoModelForSequenceClassification.from_pretrained(pretrained_model_name_or_path=model_path, local_files_only=True)
 
-# Create pipeline
+# Create sentiment pipeline
 sentiment_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
 
-# Test input
-result = sentiment_pipeline("The teaching style is excellent and very clear.")
-print(result)
+# Test with an example
+print(sentiment_pipeline("Teaching style was very clear and helpful."))
