@@ -10,10 +10,6 @@ import re
 import string
 import plotly.express as px
 import os
-from transformers import init_empty_weights
-with init_empty_weights():
-    model = AutoModel.from_config(config)
-
 
 # Download NLTK English words
 nltk.download('words')
@@ -22,12 +18,10 @@ english_words = set(nltk_words.words())
 # Set page config
 st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="centered")
 st.title("🎓 Student Feedback Sentiment Analyzer")
-from transformers import pipeline
 
+# Load your fine-tuned sentiment analysis model
 model_path = "D:/sentiment-analysis-model"
-pipe = pipeline("sentiment-analysis", model_path)
-
-print(pipe("I love this product!"))
+sentiment_pipeline = pipeline("sentiment-analysis", model=model_path)
 
 # Function to detect gibberish
 def is_gibberish(text):
@@ -86,7 +80,7 @@ page = st.sidebar.selectbox("Select Page", ["📤 Upload Feedback File", "✍ Ma
 if page == "📤 Upload Feedback File":
     st.header("📤 Upload Feedback CSV File")
     uploaded_file = st.file_uploader("Upload a CSV file with a 'feedback_text' column", type=["csv"])
-    
+
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
         if 'feedback_text' not in df.columns:
@@ -113,7 +107,6 @@ if page == "📤 Upload Feedback File":
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                     df.to_excel(writer, index=False, sheet_name='Sentiment')
-                    writer.save()
                 st.download_button("Download Excel", data=output.getvalue(), file_name="sentiment_results.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 elif page == "✍ Manual Feedback Entry":
