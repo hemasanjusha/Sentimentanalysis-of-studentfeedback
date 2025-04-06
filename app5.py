@@ -1,12 +1,13 @@
 import streamlit as st
 import pandas as pd
-from transformers import pipeline
+import torch
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 from huggingface_hub import login
-import re
-import string
 import nltk
 from nltk.corpus import words as nltk_words
 from io import BytesIO
+import re
+import string
 import plotly.express as px
 import os
 
@@ -14,28 +15,11 @@ import os
 nltk.download('words')
 english_words = set(nltk_words.words())
 
-# Title
-st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="wide")
-st.title("🎓 Student Feedback Sentiment Analyzer")
-
 # Page setup
 st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="centered")
 st.title("🎓 Student Feedback Sentiment Analyzer")
 
-import streamlit as st
-import torch
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
-import nltk
-from nltk.corpus import words
-
-# Download nltk words corpus (used for gibberish detection)
-nltk.download('words')
-
-# Set up Streamlit page
-st.set_page_config(page_title="Student Feedback Sentiment Analyzer", layout="centered")
-st.title("🎓 Student Feedback Sentiment Analyzer")
-
-# Load model and tokenizer
+# Load model
 @st.cache_resource
 def load_model():
     try:
@@ -48,6 +32,7 @@ def load_model():
         return None
 
 sentiment_pipeline = load_model()
+
 
 # Function to check for gibberish input
 def is_gibberish(text):
