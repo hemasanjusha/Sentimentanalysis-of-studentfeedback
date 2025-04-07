@@ -14,10 +14,10 @@ english_words = set(nltk_words.words())
 
 # Streamlit page config
 st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout="wide")
-# Load the model
+
 @st.cache_resource
 def load_model():
-    return pipeline("text-classification", model="./", tokenizer="./")
+    return pipeline("text-classification", model="Hemasanjusha/student-feedback-sentiment-model", tokenizer="Hemasanjusha/student-feedback-sentiment-model")
 
 
 model = load_model()
