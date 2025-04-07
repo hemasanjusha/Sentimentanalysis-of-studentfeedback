@@ -19,7 +19,6 @@ st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout
 def load_model():
     return pipeline("text-classification", model="Hemasanjusha/student-feedback-sentiment-model", tokenizer="Hemasanjusha/student-feedback-sentiment-model")
 
-
 model = load_model()
 
 # Gibberish checker
