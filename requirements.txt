@@ -1,8 +1,7 @@
 streamlit
 pandas
-transformers==4.39.3
+transformers==4.37.2
 torch
-plotly
 nltk
 openpyxl
 sentencepiece
