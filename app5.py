@@ -17,7 +17,8 @@ st.set_page_config(page_title="📊 Student Feedback Sentiment Analysis", layout
 # Load the model
 @st.cache_resource
 def load_model():
-    return pipeline("text-classification", model="Hemasanjusha/student-feedback-sentiment-model")
+    return pipeline("text-classification", model="./", tokenizer="./")
+
 
 model = load_model()
 
