@@ -1,6 +1,6 @@
 streamlit
 pandas
-transformers==4.38.0
+transformers
 torch
 nltk
 openpyxl
